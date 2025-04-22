@@ -1,5 +1,5 @@
 -- ⚙️ Configurações Iniciais
-local library = loadstring(game:HttpGet("https://example.com/UIFramework.lua"))()
+local library = loadstring(game:HttpGet("https://raw.githubusercontent.com/jotta321/script-teste-blox-fruits-1/refs/heads/main/README.md"))()
 local Window = library:CreateWindow("🔥 Blox Fruits Hub 🔥")
 
 -- ✅ Variáveis de Controle
