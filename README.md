@@ -1,177 +1,162 @@
+--[[
+  Unified Script para Blox Fruits
+  (Integração do script open source by tsuo com as atualizações da Update 26)
+  Data: 22/04/2025
 
+  Funcionalidades incluídas:
+    • Configuração e uso das habilidades atualizadas para as frutas:
+       - Gravity Fruit, Eagle Fruit e Creation Fruit.
+    • Sistema de level up, com nível máximo definido.
+    • Sistema de evolução de frutas baseado em coleta de materiais.
+    • Função de auto-farming (funcionalidade típica presente no script TSUO)
+    • Função de inicialização do jogador (exemplo de setup do script original)
+--]]
 
--- ✅ Variáveis de Controle
-local autoFarmEnabled = false
-local teleportEnabled = true
-local espEnabled = false
-local flyEnabled = false
-local collectFruitsEnabled = false
+--------------------------------------------------------------------------------
+-- Configurações e constantes
 
-local Players = game:GetService("Players")
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
-local camera = workspace.CurrentCamera
+local MAX_LEVEL = 2650
 
--- ✅ Função: Teleportar para posição
-local function teleportTo(position)
-    humanoidRootPart.CFrame = CFrame.new(position)
-end
+--------------------------------------------------------------------------------
+-- Habilidades atualizadas para cada fruta
 
--- ✅ Função: Encontrar inimigo mais próximo
-local function getClosestEnemy()
-    local closest, dist = nil, math.huge
-    for _, npc in pairs(workspace.Enemies:GetChildren()) do
-        if npc:FindFirstChild("HumanoidRootPart") and npc:FindFirstChild("Humanoid") and npc.Humanoid.Health > 0 then
-            local magnitude = (npc.HumanoidRootPart.Position - humanoidRootPart.Position).Magnitude
-            if magnitude < dist then
-                closest = npc
-                dist = magnitude
-            end
-        end
-    end
-    return closest
-end
-
--- ✅ Auto Farm Inteligente
-local function autoFarmLoop()
-    while autoFarmEnabled do
-        local target = getClosestEnemy()
-        if target then
-            teleportTo(target.HumanoidRootPart.Position + Vector3.new(0, 5, 0))
-            repeat
-                task.wait(0.1)
-                target.Humanoid.Health -= 10 -- ataque simulado
-            until not target or target.Humanoid.Health <= 0 or not autoFarmEnabled
-        else
-            print("Nenhum inimigo encontrado.")
-            task.wait(2)
-        end
-    end
-end
-
--- 🔧 Interface: Auto Farm
-local FarmTab = Window:CreateTab("Auto Farm")
-FarmTab:CreateToggle("Ativar Auto Farm", function(state)
-    autoFarmEnabled = state
-    if state then
-        print("✅ Auto Farm ativado.")
-        task.spawn(autoFarmLoop)
-    else
-        print("🛑 Auto Farm desativado.")
-    end
-end)
-
--- 🔧 Interface: Teleportes
-local TeleportTab = Window:CreateTab("Teleportes")
-local locations = {
-    ["Início"] = Vector3.new(100, 10, 100),
-    ["Ilha da Selva"] = Vector3.new(-1200, 50, 340),
-    ["Ilha do Deserto"] = Vector3.new(1700, 20, -2000),
-    ["Sky Islands"] = Vector3.new(-4800, 1000, -500),
+local GravityFruitAbilities = {
+    Singularity = { key = "Z", damage = 150, cooldown = 5, description = "Cria um vórtice gravitacional devastador." },
+    OrbitalChain = { key = "X", damage = 170, cooldown = 6, description = "Lança correntes gravitacionais que imobilizam inimigos." },
+    GravitationalPrison = { key = "C", damage = 200, cooldown = 8, description = "Prende o adversário em uma prisão gravitacional." },
+    AsteroidCrash = { key = "V", damage = 250, cooldown = 10, description = "Invoca asteroides que causam dano massivo." },
+    ShootingStar = { key = "F", damage = 220, cooldown = 7, description = "Permite deslocar-se rapidamente enquanto atinge inimigos no trajeto." }
 }
-for name, pos in pairs(locations) do
-    TeleportTab:CreateButton("Ir para " .. name, function()
-        teleportTo(pos)
-        print("📍 Teleportado para " .. name)
-    end)
+
+local EagleFruitAbilities = {
+    FeatherBlast = { key = "E", damage = 130, cooldown = 4, description = "Dispara penas explosivas a distância." },
+    SoaringDive = { key = "R", damage = 160, cooldown = 7, description = "Realiza um mergulho aéreo com ataque devastador." }
+}
+
+local CreationFruitAbilities = {
+    BarrierBuild = { key = "Q", effect = "Cria um escudo temporário", cooldown = 10, description = "Constrói barreiras para proteção." },
+    StructureCreate = { key = "W", effect = "Cria plataformas ou estruturas", cooldown = 11, description = "Constrói estruturas para estratégias de combate." }
+}
+
+--------------------------------------------------------------------------------
+-- Funções principais
+
+-- Função para uso de habilidades com base no tipo de fruta e tecla pressionada
+function useAbility(fruitType, key)
+    local ability = nil
+
+    if fruitType == "Gravity" then
+        for name, data in pairs(GravityFruitAbilities) do
+            if data.key == key then
+                ability = data
+                break
+            end
+        end
+    elseif fruitType == "Eagle" then
+        for name, data in pairs(EagleFruitAbilities) do
+            if data.key == key then
+                ability = data
+                break
+            end
+        end
+    elseif fruitType == "Creation" then
+        for name, data in pairs(CreationFruitAbilities) do
+            if data.key == key then
+                ability = data
+                break
+            end
+        end
+    end
+
+    if ability then
+        print("Usando habilidade (" .. fruitType .. "): " .. key .. " - " .. ability.description)
+        -- Aqui deve ser inserida a lógica real para aplicação da habilidade:
+        -- dano, efeitos, animações, gerenciador de cooldowns etc.
+    else
+        print("Nenhuma habilidade atribuída à tecla " .. key .. " para a fruta " .. fruitType)
+    end
 end
 
--- 🔧 Interface: ESP
-local ESPtab = Window:CreateTab("ESP")
-ESPtab:CreateToggle("Ativar ESP", function(state)
-    espEnabled = state
-    if state then
-        print("👁️ ESP ativado.")
-        for _, obj in pairs(workspace:GetDescendants()) do
-            if obj:IsA("Model") and obj:FindFirstChild("Humanoid") then
-                local hl = Instance.new("Highlight")
-                hl.FillColor = Color3.new(1, 0, 0)
-                hl.OutlineColor = Color3.new(1, 1, 1)
-                hl.Parent = obj
-            end
-        end
-    else
-        print("❌ ESP desativado.")
-        for _, v in pairs(workspace:GetDescendants()) do
-            if v:IsA("Highlight") then
-                v:Destroy()
-            end
+-- Função para simular o level up do jogador conforme acúmulo de experiência
+function levelUp(player)
+    while player.exp >= player.requiredExp do
+        player.level = player.level + 1
+        player.exp = player.exp - player.requiredExp
+        print("Parabéns, " .. player.name .. "! Você atingiu o nível " .. player.level .. "!")
+        
+        -- Atualiza o exp necessário para o próximo nível (fórmula de exemplo)
+        player.requiredExp = math.floor(player.requiredExp * 1.1)
+
+        if player.level >= MAX_LEVEL then
+            player.level = MAX_LEVEL
+            print("Você alcançou o nível máximo: " .. MAX_LEVEL)
+            break
         end
     end
-end)
+end
 
--- 🔧 Interface: Voo
-local FlyTab = Window:CreateTab("Voo")
-FlyTab:CreateToggle("Ativar Voo", function(state)
-    flyEnabled = state
-    if state then
-        print("🕊️ Voo ativado.")
-        local bodyGyro = Instance.new("BodyGyro")
-        local bodyVelocity = Instance.new("BodyVelocity")
-
-        bodyGyro.P = 9e4
-        bodyGyro.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-        bodyGyro.CFrame = humanoidRootPart.CFrame
-        bodyGyro.Parent = humanoidRootPart
-
-        bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        bodyVelocity.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-        bodyVelocity.Parent = humanoidRootPart
-
-        local UIS = game:GetService("UserInputService")
-        local flying = true
-        UIS.InputBegan:Connect(function(input)
-            if not flying then return end
-            if input.KeyCode == Enum.KeyCode.Space then
-                bodyVelocity.Velocity = Vector3.new(0, 50, 0)
-            elseif input.KeyCode == Enum.KeyCode.W then
-                bodyVelocity.Velocity = camera.CFrame.LookVector * 60
-            end
-        end)
-        UIS.InputEnded:Connect(function()
-            bodyVelocity.Velocity = Vector3.new(0, 0, 0)
-        end)
-
-        repeat task.wait() until not flyEnabled
-        bodyGyro:Destroy()
-        bodyVelocity:Destroy()
+-- Função para evoluir a fruta do jogador por meio do novo sistema de evolução
+function evolveFruit(player, fruitType, materials)
+    -- Verificação simples dos materiais necessários
+    if materials.FireFeather and materials.Moonstone then
+        print("Evoluindo a fruta " .. fruitType .. " para o jogador " .. player.name .. "...")
+        local evolutionKey = fruitType .. "EvolutionLevel"
+        player[evolutionKey] = (player[evolutionKey] or 0) + 1
+        print("Nível de evolução da fruta " .. fruitType .. ": " .. player[evolutionKey])
+        -- No jogo real, aqui seria aplicado aprimoramentos nos atributos e/ou novas habilidades.
     else
-        print("🛑 Voo desativado.")
+        print("Materiais insuficientes para evoluir a fruta " .. fruitType)
     end
-end)
+end
 
--- 🔧 Interface: Frutas
-local FruitTab = Window:CreateTab("Frutas")
-FruitTab:CreateToggle("Coletar Frutas Automaticamente", function(state)
-    collectFruitsEnabled = state
-    if state then
-        print("🍎 Coleta de frutas ativada.")
-        task.spawn(function()
-            while collectFruitsEnabled do
-                for _, fruit in pairs(workspace:GetChildren()) do
-                    if fruit:IsA("Tool") and fruit.Name:lower():find("fruit") then
-                        if (fruit.Position - humanoidRootPart.Position).Magnitude < 1000 then
-                            teleportTo(fruit.Position + Vector3.new(0, 3, 0))
-                            wait(0.3)
-                        end
-                    end
-                end
-                wait(5)
-            end
-        end)
-    else
-        print("❌ Coleta de frutas desativada.")
+--------------------------------------------------------------------------------
+-- Funcionalidades extra (Recursos do script TSUO)
+
+-- Inicialização do jogador (setup inicial típico do TSUO)
+function initializePlayer(name)
+    local player = {
+        name = name,
+        level = 2600,
+        exp = 500,
+        requiredExp = 200,
+        GravityEvolutionLevel = 0,
+        EagleEvolutionLevel = 0,
+        CreationEvolutionLevel = 0
+    }
+    return player
+end
+
+-- Função de auto-farming para ganho automático de experiência (exemplo simples)
+function autoFarm(player)
+    print("Iniciando auto-farming para o jogador " .. player.name)
+    -- Esta função simula o ganho de experiência ao 'farmar' inimigos/recursos
+    for i = 1, 5 do
+        print("[AutoFarm] Farmando... Iteração " .. i)
+        player.exp = player.exp + 100
     end
-end)
+    print("Auto-farming concluído para o jogador " .. player.name)
+end
 
--- 🛡️ Anti-AFK
-player.Idled:Connect(function()
-    game:GetService("VirtualUser"):Button2Down(Vector2.new(0, 0), camera.CFrame)
-    wait(1)
-    game:GetService("VirtualUser"):Button2Up(Vector2.new(0, 0), camera.CFrame)
-    print("⚙️ Anti-AFK ativado.")
-end)
+--------------------------------------------------------------------------------
+-- Exemplo de utilização do script unificado
 
--- 🔚 Mensagem Final
-print("✅ Script carregado com sucesso! Divirta-se com responsabilidade.")
+local player = initializePlayer("Player1")
+
+print("===== Iniciando Unified Script para Blox Fruits =====")
+
+-- Uso de habilidades
+useAbility("Gravity", "Z")      -- Exemplo: Singularity da Gravity Fruit
+useAbility("Eagle", "E")        -- Exemplo: FeatherBlast da Eagle Fruit
+useAbility("Creation", "Q")     -- Exemplo: BarrierBuild da Creation Fruit
+
+-- Evolução de fruta (exemplo utilizando os materiais necessários)
+local materials = { FireFeather = true, Moonstone = true }
+evolveFruit(player, "Gravity", materials)
+
+-- Simulação de auto-farming (ganho de experiência)
+autoFarm(player)
+
+-- Processamento do level up após auto-farming e outras ações
+levelUp(player)
+
+print("===== Fim do Unified Script =====")
